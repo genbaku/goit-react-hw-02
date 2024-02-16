@@ -1,25 +1,61 @@
-
-import { Profile } from "./components/Profile/Profile"
-import { FriendList } from "./components/FriendList/FriendList"
-import { TransactionHistory } from "./components/TransactionHistory/TransactionHistory"
-import userData from "./data/userData.json"
-import friends from "./data/friends.json"
-import transactions from "./data/transactions.json"
+import { Description } from "./components/description/Description"
+import { Options } from "./components/options/Options"
+import { Feedback } from "./components/feedback/Feedback"
+import { Notification } from "./components/notification/Notification"
+import { useState, useEffect } from "react"
 
 export const App = () => {
+  const [feedbackType, setFeedbackType] = useState(() => {
+    const savedFeedback = localStorage.getItem('feedbackType');
+    if (savedFeedback) {
+      return JSON.parse(savedFeedback);
+    } else {
+      return {
+        good: 0,
+        neutral: 0,
+        bad: 0
+      };
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('feedbackType', JSON.stringify(feedbackType));
+  }, [feedbackType]);
+
+  const totalFeedback = feedbackType.good + feedbackType.neutral + feedbackType.bad;
+  const positivePercentage = Math.round(((feedbackType.good + feedbackType.neutral) / totalFeedback) * 100);
+
+  const updateFeedback = (type) => {
+    const newFeedbackAmount = { ...feedbackType };
+    newFeedbackAmount[type] += 1;
+    setFeedbackType(newFeedbackAmount);
+  };
+
+  const resetFeedback = () => {
+    setFeedbackType({
+      good: 0,
+      neutral: 0,
+      bad: 0
+    });
+  };
+
   return (
     <>
-      <Profile
-        name={userData.username}
-        tag={userData.tag}
-        location={userData.location}
-        image={userData.avatar}
-        stats={userData.stats}
+      <Description />
+      <Options
+        updateFeedback={updateFeedback}
+        totalFeedback={totalFeedback}
+        resetFeedback={resetFeedback}
       />
-      <hr />
-      <FriendList friends={friends} />
-      <hr />
-      <TransactionHistory items={transactions} />
+      {totalFeedback === 0 ? (
+        <Notification message="No feedback yet" />
+      ) : (
+        <Feedback 
+        feedbacks={feedbackType} 
+        totalFeedback={totalFeedback}
+        positivePercentage={positivePercentage}
+        />
+      )}
     </>
   )
 }
